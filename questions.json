@@ -1,0 +1,32 @@
+[
+    {
+        "question": "What is 5 + 3?",
+        "options": [
+            "6",
+            "7",
+            "8",
+            "9"
+        ],
+        "correct": 2
+    },
+    {
+        "question": "What is 12 + 7?",
+        "options": [
+            "18",
+            "19",
+            "20",
+            "21"
+        ],
+        "correct": 1
+    },
+    {
+        "question": "What is 25 + 15?",
+        "options": [
+            "35",
+            "40",
+            "45",
+            "50"
+        ],
+        "correct": 1
+    }
+]

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathematics Quiz - Certificate Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .question {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+
+        .question h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .option:hover {
+            background-color: #e9ecef;
+        }
+
+        .option input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎓 Mathematics Quiz</h1>
+        <p style="text-align: center; color: #6c757d; margin-bottom: 30px;">
+            Answer all questions correctly to earn your certificate!
+        </p>
+
+        <form id="quizForm">
+            <div id="questions"></div>
+
+            <div class="form-group">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" required placeholder="Enter your full name" value="Demo User">
+            </div>
+
+            <button type="submit" id="submitBtn">Submit Quiz</button>
+        </form>
+
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        let questions = [];
+
+        // Load questions when page loads
+        async function loadQuestions() {
+            try {
+                const response = await fetch('/api/quiz');
+                const data = await response.json();
+                questions = data.questions;
+                renderQuestions();
+            } catch (error) {
+                console.error('Failed to load questions:', error);
+                document.getElementById('questions').innerHTML =
+                    '<div class="error">Failed to load questions. Please refresh the page.</div>';
+            }
+        }
+
+        // Render questions in the form
+        function renderQuestions() {
+            const questionsDiv = document.getElementById('questions');
+            questionsDiv.innerHTML = questions.map((q, index) => `
+                <div class="question">
+                    <h3>Question ${index + 1}</h3>
+                    <p>${q.question}</p>
+                    <div class="options">
+                        ${q.options.map((option, optionIndex) => `
+                            <label class="option">
+                                <input type="radio" name="q${index}" value="${optionIndex}" required>
+                                ${option}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Handle form submission
+        document.getElementById('quizForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+
+            // Get form data
+            const name = document.getElementById('name').value.trim();
+            const answers = [];
+
+            for (let i = 0; i < questions.length; i++) {
+                const selected = document.querySelector(`input[name="q${i}"]:checked`);
+                if (!selected) {
+                    alert('Please answer all questions!');
+                    return;
+                }
+                answers.push(parseInt(selected.value));
+            }
+
+            // Disable submit button and show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/submit-quiz', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, answers })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.perfect) {
+                        // Perfect score - redirect to completion page
+                        window.location.href = `/complete?hash=${result.fileHash}`;
+                    } else {
+                        // Show score but not perfect
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                <h3>Quiz Results</h3>
+                                <p>${result.message}</p>
+                                <p>Score: ${result.score}/${result.total}</p>
+                            </div>
+                        `;
+                        resultDiv.style.display = 'block';
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>Error</h3>
+                            <p>${result.message}</p>
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Submission error:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Error</h3>
+                        <p>Failed to submit quiz. Please try again.</p>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Quiz';
+            }
+        });
+
+        // Load questions when page loads
+        loadQuestions();
+    </script>
+</body>
+
+</html>

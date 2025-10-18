@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Complete - Quiz Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .certificate-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+
+        .file-status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+
+        .file-status h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .status-value {
+            color: #6c757d;
+        }
+
+        .status-value.stamped {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-value.pending {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .status-value.error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .certificate-preview {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .hash-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="success-icon">🎉</div>
+        <h1>Congratulations!</h1>
+        <p style="font-size: 18px; color: #6c757d; margin-bottom: 30px;">
+            You've successfully completed the Mathematics Quiz with a perfect score!
+        </p>
+
+        <div class="certificate-info">
+            <h3>📜 Your Certificate</h3>
+            <p>Your certificate has been generated and uploaded to the blockchain. It's now permanently stored and
+                verifiable.</p>
+            <p><strong>Collection:</strong> Course Complete</p>
+            <p><strong>Network:</strong> <span id="network">Loading...</span></p>
+
+            <div id="certificatePreview" style="margin-top: 20px; display: none;">
+                <h4>Certificate Preview</h4>
+                <img id="certImage" class="certificate-preview" alt="Your Certificate"
+                    style="max-width: 100%; height: auto;">
+                <p style="font-size: 12px; color: #6c757d; margin-top: 10px;">
+                    This is your certificate as stored on the blockchain
+                </p>
+            </div>
+        </div>
+
+        <div class="file-status">
+            <h3>📊 File Status</h3>
+            <div id="statusContent">
+                <div class="loading">Loading file status...</div>
+            </div>
+            <button id="refreshBtn" onclick="checkFileStatus()">🔄 Refresh Status</button>
+        </div>
+
+        <div class="certificate-display">
+            <h3>📜 Certificate Image</h3>
+            <div id="certificateImageContainer">
+                <img id="certificateImage" alt="Certificate"
+                    style="max-width: 100%; height: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button onclick="window.location.href='/'">🏠 Take Quiz Again</button>
+            <button onclick="downloadCertificate()">📥 Download Certificate</button>
+        </div>
+    </div>
+
+    <script>
+        let fileHash = '';
+
+        // Get file hash from URL parameters
+        function getFileHash() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('hash');
+        }
+
+        // Check file status from API
+        async function checkFileStatus() {
+            const hash = getFileHash();
+            if (!hash) {
+                document.getElementById('statusContent').innerHTML =
+                    '<div class="error">No file hash found in URL.</div>';
+                return;
+            }
+
+            fileHash = hash;
+            const refreshBtn = document.getElementById('refreshBtn');
+            const statusContent = document.getElementById('statusContent');
+
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Checking...';
+            statusContent.innerHTML = '<div class="loading">Checking file status...</div>';
+
+            try {
+                // First, get file info from group (includes gatewayurl)
+                const groupResponse = await fetch(`/api/file-info/${hash}`);
+
+                if (!groupResponse.ok) {
+                    throw new Error(`File info request failed: ${groupResponse.status} ${groupResponse.statusText}`);
+                }
+
+                const groupResult = await groupResponse.json();
+
+                // Then, get blockchain transaction details
+                const blockchainResponse = await fetch(`/api/file-status/${hash}`);
+
+                if (!blockchainResponse.ok) {
+                    throw new Error(`Blockchain request failed: ${blockchainResponse.status} ${blockchainResponse.statusText}`);
+                }
+
+                const blockchainResult = await blockchainResponse.json();
+
+                if (groupResult.success && groupResult.data) {
+                    const fileData = groupResult.data;
+
+                    // Set certificate image src
+                    const certImage = document.getElementById('certificateImage');
+
+                    // Use claim link CID if available; otherwise use gateway/hash
+                    let gatewayUrl = fileData.gatewayurl;
+
+                    if (!gatewayUrl && fileData.hash) {
+                        gatewayUrl = `https://ipfs.io/ipfs/${fileData.hash}`;
+                    }
+
+                    // Try to use claim permalink (export_data.permalinks) to build /ipfs/:cid URL
+                    if (blockchainResult.success && blockchainResult.data && blockchainResult.data.export_data && blockchainResult.data.export_data.permalinks) {
+                        const claim = blockchainResult.data.export_data.permalinks.find(permalink => permalink.cid === (fileData.hash || hash));
+                        if (claim && claim.cid) {
+                            // Prefer claim link CID to avoid any mismatch and ensure retrievability
+                            const ipfsViaClaim = `https://gateway.pinata.cloud/ipfs/${claim.cid}`;
+                            certImage.src = ipfsViaClaim;
+                        } else if (gatewayUrl || fileData.hash) {
+                            const pinFallback = `https://gateway.pinata.cloud/ipfs/${fileData.hash || ''}`;
+                            certImage.src = pinFallback;
+                        }
+                    } else if (gatewayUrl || fileData.hash) {
+                        const pinFallback = `https://gateway.pinata.cloud/ipfs/${fileData.hash || ''}`;
+                        certImage.src = pinFallback;
+                    }
+
+                    // Build status display with both group info and blockchain info
+                    let statusHTML = `
+                        <div class="status-item">
+                            <span class="status-label">File Hash:</span>
+                            <span class="status-value hash-display">${fileData.hash || hash}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">File Name:</span>
+                            <span class="status-value">${fileData.name || 'cert.png'}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">File Size:</span>
+                            <span class="status-value">${fileData.size ? (fileData.size / 1024).toFixed(2) + ' KB' : 'Unknown'}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Created:</span>
+                            <span class="status-value">${fileData.created_at ? new Date(fileData.created_at).toLocaleString() : 'Unknown'}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Stamped:</span>
+                            <span class="status-value ${fileData.is_stamped ? 'stamped' : 'pending'}">
+                                ${fileData.is_stamped ? '✅ Yes' : '⏳ Pending'}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Transaction ID:</span>
+                            <span class="status-value hash-display">${(() => {
+                            const d = (blockchainResult && blockchainResult.data && blockchainResult.data.data) ? blockchainResult.data.data : {};
+                            return d.foreign_tx_id || d.tx_id || d.transaction_id || d.transactionId || d.txhash || d.tx_hash || 'Not available';
+                        })()}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Contract Address:</span>
+                            <span class="status-value hash-display">${blockchainResult.success && blockchainResult.data && blockchainResult.data.data && blockchainResult.data.data.contract ? blockchainResult.data.data.contract : 'Not available'}</span>
+                        </div>
+                        ${blockchainResult.success && blockchainResult.data && blockchainResult.data.export_data && blockchainResult.data.export_data.permalinks ? (() => {
+                            const fileHash = fileData.hash || hash;
+                            const matchingPermalink = blockchainResult.data.export_data.permalinks.find(permalink => permalink.cid === fileHash);
+                            return matchingPermalink ? `
+                            <div class="status-item">
+                                <span class="status-label">Claim IPFS URL:</span>
+                                <span class="status-value">
+                                    <a href="https://gateway.pinata.cloud/ipfs/${matchingPermalink.cid}" target="_blank" style="color: #007bff;">View on IPFS</a>
+                                </span>
+                            </div>
+                            ` : '';
+                        })() : ''}
+                        ${fileData.gatewayurl ? `
+                        <div class="status-item">
+                            <span class="status-label">Gateway URL:</span>
+                            <span class="status-value">
+                                <a href="${fileData.gatewayurl}" target="_blank" style="color: #007bff;">View on IPFS</a>
+                            </span>
+                        </div>
+                        ` : ''}
+                    `;
+
+                    // Add blockchain transaction details if available
+                    if (blockchainResult.success && blockchainResult.data && blockchainResult.data.data) {
+                        const blockchainData = blockchainResult.data.data;
+                        statusHTML += `
+                            ${blockchainData.created ? `
+                            <div class="status-item">
+                                <span class="status-label">Stamped Date:</span>
+                                <span class="status-value">${new Date(blockchainData.created * 1000).toLocaleString()}</span>
+                            </div>
+                            ` : ''}
+                        `;
+                    }
+
+                    statusContent.innerHTML = statusHTML;
+                } else {
+                    statusContent.innerHTML = `
+                        <div class="error">
+                            <h4>Status Check Failed</h4>
+                            <p>${groupResult.message || 'Unable to retrieve file status'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+                statusContent.innerHTML = `
+                    <div class="error">
+                        <h4>Error</h4>
+                        <p>Failed to check file status: ${error.message}</p>
+                        <p>Please try again or check the browser console for more details.</p>
+                    </div>
+                `;
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 Refresh Status';
+            }
+        }
+
+        // Download certificate function
+        function downloadCertificate() {
+            const hash = getFileHash();
+            if (hash) {
+                // Create a download link for the certificate image
+                const downloadUrl = `https://gateway.pinata.cloud/ipfs/${hash}`;
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = 'certificate.png';
+                link.target = '_blank';
+
+                // Trigger the download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                alert('No certificate hash available for download.');
+            }
+        }
+
+        // Load network info and check status when page loads
+        window.addEventListener('load', () => {
+            // Set network info (this would come from the server)
+            document.getElementById('network').textContent = 'Public Network';
+
+            // Check file status
+            checkFileStatus();
+        });
+    </script>
+</body>
+
+</html>
