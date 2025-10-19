@@ -203,8 +203,8 @@
                     <div class="spinner"></div>
                     <div>Preparing your certificate image...</div>
                 </div>
-                <img id="certificateImage" alt="Certificate" style="display: none;"
-                    style="max-width: 100%; height: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                <img id="certificateImage" alt="Certificate"
+                    style="display: none; max-width: 100%; height: auto; border: 1px solid #dee2e6; border-radius: 8px;">
             </div>
         </div>
 
@@ -245,6 +245,7 @@
         let claimShortUrl = '';
         let imageUrl = '';
         let imagePollTimer = null;
+        let imageLoaded = false;
 
         // Get file hash from URL parameters
         function getFileHash() {
@@ -446,18 +447,34 @@
             // Reset UI
             loading.style.display = 'block';
             img.style.display = 'none';
+            imageLoaded = false;
+
+            // Bind listeners once
+            const handleLoad = () => {
+                imageLoaded = true;
+                loading.style.display = 'none';
+                img.style.display = 'block';
+                if (imagePollTimer) {
+                    clearInterval(imagePollTimer);
+                    imagePollTimer = null;
+                }
+                img.removeEventListener('load', handleLoad);
+                img.removeEventListener('error', handleError);
+            };
+
+            const handleError = () => {
+                // keep polling; do nothing special
+            };
+
+            img.addEventListener('load', handleLoad);
+            img.addEventListener('error', handleError);
 
             const tryLoad = async () => {
+                if (imageLoaded) return;
                 try {
-                    // HEAD request to check availability quickly
-                    const res = await fetch(imageUrl, { method: 'HEAD', cache: 'no-cache' });
+                    const res = await fetch(`${imageUrl}`, { method: 'HEAD', cache: 'no-cache' });
                     if (res.ok) {
-                        img.onload = () => {
-                            loading.style.display = 'none';
-                            img.style.display = 'block';
-                            if (imagePollTimer) clearInterval(imagePollTimer);
-                        };
-                        // Bust cache to avoid stale 404s
+                        // Bust cache to avoid stale gateways
                         img.src = `${imageUrl}?t=${Date.now()}`;
                     }
                 } catch (e) {
