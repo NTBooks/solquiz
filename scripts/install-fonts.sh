@@ -1,35 +1,25 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -e
 
-echo "[fonts] Detecting OS and installing fallback fonts..."
+echo "[fonts] Detecting OS and installing fonts (no sudo, for Nixpacks)..."
 
-if [ -f /etc/alpine-release ]; then
-  echo "[fonts] Alpine Linux detected"
-  # Need root for apk
-  if [ "$(id -u)" -ne 0 ]; then
-    echo "[fonts] This script needs to run as root inside the container/host (apk)." >&2
-    exit 1
-  fi
-  apk add --no-cache fontconfig ttf-dejavu ttf-liberation noto-fonts
-  fc-cache -f
-  echo "[fonts] Installed: fontconfig, ttf-dejavu, ttf-liberation, noto-fonts"
-elif [ -f /etc/debian_version ] || [ -f /etc/lsb-release ]; then
+if command -v apk >/dev/null 2>&1; then
+  echo "[fonts] Alpine detected"
+  apk add --no-cache fontconfig ttf-dejavu ttf-liberation noto-fonts || true
+  fc-cache -f || true
+  echo "[fonts] Installed on Alpine: fontconfig, ttf-dejavu, ttf-liberation, noto-fonts"
+elif command -v apt-get >/dev/null 2>&1; then
   echo "[fonts] Debian/Ubuntu detected"
-  if [ "$(id -u)" -ne 0 ]; then
-    echo "[fonts] This script needs to run as root (apt). Try: sudo $0" >&2
-    exit 1
-  fi
-  apt-get update
+  apt-get update -y || true
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    fontconfig fonts-dejavu-core fonts-liberation fonts-noto-core
-  fc-cache -f
-  echo "[fonts] Installed: fontconfig, fonts-dejavu-core, fonts-liberation, fonts-noto-core"
+    fontconfig fonts-dejavu-core fonts-liberation fonts-freefont-ttf \
+    libvips libvips-dev || true
+  fc-cache -f || true
+  echo "[fonts] Installed on Debian: fontconfig + common fonts (+libvips)"
 else
-  echo "[fonts] Unsupported distro. Please install a system font pack and fontconfig manually." >&2
-  echo "Suggested packages: fontconfig + DejaVu Sans (or Noto) family."
-  exit 1
+  echo "[fonts] Unsupported distro. Please install fontconfig + a Sans font (DejaVu/Noto)." >&2
 fi
 
-echo "[fonts] Done."
-
-
+# Optional debug
+fc-list | head -n 10 || true
+echo "[fonts] Setup complete."
