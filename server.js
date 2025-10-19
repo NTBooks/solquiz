@@ -424,4 +424,7 @@ app.listen(PORT, () => {
     console.log(`API Key: ${API_KEY ? 'Configured' : 'Missing'}`);
     console.log(`API Secret: ${API_SECRET ? 'Configured' : 'Missing'}`);
     console.log(`Network: ${API_NETWORK}`);
+    console.log(`Certificate font family: ${CERT_FONT_FAMILY}`);
+    // Basic runtime font check hint
+    console.log('If certificate text appears as boxes, install system fonts and fontconfig. On Alpine run: npm run fix:fonts');
 }); 

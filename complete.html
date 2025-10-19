@@ -246,6 +246,7 @@
         let imageUrl = '';
         let imagePollTimer = null;
         let imageLoaded = false;
+        let imageAttemptInFlight = false;
 
         // Get file hash from URL parameters
         function getFileHash() {
@@ -448,44 +449,52 @@
             loading.style.display = 'block';
             img.style.display = 'none';
             imageLoaded = false;
+            imageAttemptInFlight = false;
 
-            // Bind listeners once
-            const handleLoad = () => {
-                imageLoaded = true;
-                loading.style.display = 'none';
-                img.style.display = 'block';
-                if (imagePollTimer) {
-                    clearInterval(imagePollTimer);
-                    imagePollTimer = null;
-                }
-                img.removeEventListener('load', handleLoad);
-                img.removeEventListener('error', handleError);
-            };
+            // Backoff settings
+            let attempt = 0;
+            const maxDelay = 10000; // cap at 10s
 
-            const handleError = () => {
-                // keep polling; do nothing special
-            };
-
-            img.addEventListener('load', handleLoad);
-            img.addEventListener('error', handleError);
-
-            const tryLoad = async () => {
+            const scheduleNext = () => {
                 if (imageLoaded) return;
-                try {
-                    const res = await fetch(`${imageUrl}`, { method: 'HEAD', cache: 'no-cache' });
-                    if (res.ok) {
-                        // Bust cache to avoid stale gateways
-                        img.src = `${imageUrl}?t=${Date.now()}`;
-                    }
-                } catch (e) {
-                    // ignore and retry
-                }
+                const base = Math.min(1000 * Math.pow(2, attempt++), maxDelay);
+                const jitter = Math.floor(Math.random() * 300);
+                imagePollTimer = setTimeout(tryLoad, base + jitter);
             };
 
-            // First attempt immediately, then poll every 1s
+            const tryLoad = () => {
+                if (imageLoaded || imageAttemptInFlight) {
+                    scheduleNext();
+                    return;
+                }
+                imageAttemptInFlight = true;
+
+                // Probe via server proxy to avoid gateway caching/CORS; bust cache with ts
+                const probeUrl = `/ipfs?url=${encodeURIComponent(imageUrl)}&t=${Date.now()}`;
+                const probeImg = new Image();
+                probeImg.onload = () => {
+                    imageLoaded = true;
+                    imageAttemptInFlight = false;
+                    // Set the real image src to the successful proxied URL
+                    img.src = probeUrl;
+                    img.onload = () => {
+                        loading.style.display = 'none';
+                        img.style.display = 'block';
+                        if (imagePollTimer) {
+                            clearTimeout(imagePollTimer);
+                            imagePollTimer = null;
+                        }
+                    };
+                };
+                probeImg.onerror = () => {
+                    imageAttemptInFlight = false;
+                    scheduleNext();
+                };
+                probeImg.src = probeUrl;
+            };
+
+            // Kick off
             tryLoad();
-            if (imagePollTimer) clearInterval(imagePollTimer);
-            imagePollTimer = setInterval(tryLoad, 1000);
         }
 
         // Download certificate function

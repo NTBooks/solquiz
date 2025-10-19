@@ -5,7 +5,8 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server.js"
+        "dev": "node server.js",
+        "install": "sh ./scripts/install-fonts.sh"
     },
     "dependencies": {
         "axios": "^1.10.0",
