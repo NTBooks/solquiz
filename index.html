@@ -124,6 +124,19 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+
+        .required {
+            color: #dc3545;
+        }
+
+        input:required:invalid {
+            border-color: #dc3545;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
     </style>
 </head>
 
@@ -138,8 +151,9 @@
             <div id="questions"></div>
 
             <div class="form-group">
-                <label for="name">Your Name:</label>
-                <input type="text" id="name" name="name" required placeholder="Enter your full name" value="Demo User">
+                <label for="name">Your Name <span class="required">*</span></label>
+                <input type="text" id="name" name="name" required aria-required="true" autofocus
+                    placeholder="Enter your full name (required)">
             </div>
 
             <button type="submit" id="submitBtn">Submit Quiz</button>

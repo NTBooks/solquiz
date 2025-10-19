@@ -19,6 +19,7 @@ const API_BASE_URL = process.env.API_BASE_URL;
 const API_KEY = process.env.API_KEY;
 const API_SECRET = process.env.API_SECRET;
 const API_NETWORK = process.env.API_NETWORK || 'public';
+const CERT_FONT_FAMILY = process.env.CERT_FONT_FAMILY || 'DejaVu Sans, Arial, sans-serif';
 
 // Quiz questions (load from .env QUIZ or fallback)
 const QUIZ_FILE = process.env.QUIZ || 'questions.json';
@@ -59,41 +60,41 @@ async function generateCertificate(name, title) {
 			<rect x="50" y="50" width="700" height="500" fill="white" stroke="#007bff" stroke-width="3"/>
 			
 			<!-- Header -->
-			<text x="400" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#007bff">
+			<text x="400" y="120" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="36" font-weight="bold" fill="#007bff">
 				Certificate of Completion
 			</text>
 			
 			<!-- Subtitle -->
-			<text x="400" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#6c757d">
+			<text x="400" y="160" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="18" fill="#6c757d">
 				${title}
 			</text>
 			
 			<!-- Main text -->
-			<text x="400" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#212529">
+			<text x="400" y="250" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">
 				This is to certify that
 			</text>
 			
 			<!-- Name -->
-			<text x="400" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#007bff">
+			<text x="400" y="300" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="28" font-weight="bold" fill="#007bff">
 				${name}
 			</text>
 			
 			<!-- Completion text -->
-			<text x="400" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#212529">
+			<text x="400" y="350" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">
 				has successfully completed the ${title}
 			</text>
 			
-			<text x="400" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#212529">
+			<text x="400" y="380" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">
 				with a perfect score.
 			</text>
 			
 			<!-- Date -->
-			<text x="400" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6c757d">
+			<text x="400" y="450" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="16" fill="#6c757d">
 				Date: ${currentDate}
 			</text>
 			
 			<!-- Footer -->
-			<text x="400" y="520" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6c757d">
+			<text x="400" y="520" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="14" fill="#6c757d">
 				Certificate ID: ${certificateId}
 			</text>
 		</svg>
