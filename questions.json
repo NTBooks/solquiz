@@ -1,32 +1,65 @@
-[
-    {
-        "question": "What is 5 + 3?",
-        "options": [
-            "6",
-            "7",
-            "8",
-            "9"
-        ],
-        "correct": 2
-    },
-    {
-        "question": "What is 12 + 7?",
-        "options": [
-            "18",
-            "19",
-            "20",
-            "21"
-        ],
-        "correct": 1
-    },
-    {
-        "question": "What is 25 + 15?",
-        "options": [
-            "35",
-            "40",
-            "45",
-            "50"
-        ],
-        "correct": 1
-    }
-]
+{
+    "title": "Blockchain Credentials Quiz",
+    "questions": [
+        {
+            "question": "What is the main advantage of storing a digital credential on the blockchain instead of a traditional database?",
+            "options": [
+                "It makes the credential look more impressive",
+                "It prevents anyone from altering or faking the credential",
+                "It allows the university to charge higher fees",
+                "It automatically renews the credential every year"
+            ],
+            "correct": 1
+        },
+        {
+            "question": "What does it mean when a credential is \"stamped\" on the blockchain?",
+            "options": [
+                "The credential is converted into a physical certificate",
+                "The file is hashed and timestamped on the blockchain, creating a permanent proof of authenticity",
+                "The credential is uploaded to social media for sharing",
+                "The credential’s design is updated automatically"
+            ],
+            "correct": 1
+        },
+        {
+            "question": "How can blockchain-based digital credentials help prevent fraud?",
+            "options": [
+                "By using complicated passwords",
+                "By relying on paper signatures",
+                "By creating an immutable record that verifies when and by whom a document was issued",
+                "By hiding credentials from public view"
+            ],
+            "correct": 2
+        },
+        {
+            "question": "Which of the following best describes the benefit for institutions using blockchain credentials?",
+            "options": [
+                "They can issue unlimited fake diplomas",
+                "They can demonstrate transparency and trust in their academic or professional records",
+                "They can avoid ever updating their systems again",
+                "They no longer need to verify student identities"
+            ],
+            "correct": 1
+        },
+        {
+            "question": "Why is blockchain considered especially valuable in the age of AI and deepfakes?",
+            "options": [
+                "Because AI automatically checks blockchain records",
+                "Because blockchain can prove when and by whom digital content originated, even if AI tries to manipulate it",
+                "Because blockchain replaces all forms of AI",
+                "Because AI and blockchain are the same technology"
+            ],
+            "correct": 1
+        },
+        {
+            "question": "What does it mean that blockchain credentials are decentralized?",
+            "options": [
+                "They’re stored in one secure corporate database",
+                "No single company or organization controls the records, so credentials remain accessible even if a provider shuts down",
+                "Each university must host its own blockchain from scratch",
+                "They can only be viewed through a special app"
+            ],
+            "correct": 1
+        }
+    ]
+}

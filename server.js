@@ -20,13 +20,30 @@ const API_KEY = process.env.API_KEY;
 const API_SECRET = process.env.API_SECRET;
 const API_NETWORK = process.env.API_NETWORK || 'public';
 
-// Quiz questions
-const quizQuestions = require('./questions.json');
+// Quiz questions (load from .env QUIZ or fallback)
+const QUIZ_FILE = process.env.QUIZ || 'questions.json';
+let quizQuestions = [];
+let quizTitle = 'Quiz';
+try {
+    const quizPath = path.join(__dirname, QUIZ_FILE);
+    const loaded = require(quizPath);
+    if (Array.isArray(loaded)) {
+        quizQuestions = loaded;
+        quizTitle = 'Quiz';
+    } else if (loaded && typeof loaded === 'object') {
+        quizTitle = loaded.title || 'Quiz';
+        quizQuestions = Array.isArray(loaded.questions) ? loaded.questions : [];
+    }
+    console.log(`Loaded quiz from ${QUIZ_FILE} (title: ${quizTitle}, questions: ${quizQuestions.length})`);
+} catch (e) {
+    console.error(`Failed to load quiz file '${QUIZ_FILE}':`, e.message);
+    quizQuestions = [];
+}
 
 
 
 // Generate certificate with name and date and return buffer + certificateId
-async function generateCertificate(name) {
+async function generateCertificate(name, title) {
     const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -48,7 +65,7 @@ async function generateCertificate(name) {
 			
 			<!-- Subtitle -->
 			<text x="400" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#6c757d">
-				Mathematics Quiz
+				${title}
 			</text>
 			
 			<!-- Main text -->
@@ -63,7 +80,7 @@ async function generateCertificate(name) {
 			
 			<!-- Completion text -->
 			<text x="400" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#212529">
-				has successfully completed the Mathematics Quiz
+				has successfully completed the ${title}
 			</text>
 			
 			<text x="400" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#212529">
@@ -101,7 +118,7 @@ app.get('/complete', (req, res) => {
 
 // API endpoint to get quiz questions
 app.get('/api/quiz', (req, res) => {
-    res.json({ questions: quizQuestions });
+    res.json({ title: quizTitle, questions: quizQuestions });
 });
 
 // API endpoint to submit quiz answers
@@ -137,7 +154,7 @@ app.post('/api/submit-quiz', async (req, res) => {
         }
 
         // Generate certificate
-        const { buffer: certBuffer, certificateId } = await generateCertificate(name);
+        const { buffer: certBuffer, certificateId } = await generateCertificate(name, quizTitle);
         const certFilename = `${certificateId}.png`;
         const certPath = path.join(__dirname, certFilename);
         await fs.writeFile(certPath, certBuffer);

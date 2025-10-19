@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificate Complete - Quiz Demo</title>
+    <title>Certificate Complete - Loading...</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -130,6 +130,24 @@
             margin: 20px 0;
         }
 
+        .primary-cta {
+            display: inline-block;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0 20px 0;
+        }
+
+        .primary-cta:hover {
+            background-color: #0056b3;
+        }
+
         .certificate-preview {
             max-width: 100%;
             height: auto;
@@ -153,9 +171,22 @@
     <div class="container">
         <div class="success-icon">🎉</div>
         <h1>Congratulations!</h1>
-        <p style="font-size: 18px; color: #6c757d; margin-bottom: 30px;">
-            You've successfully completed the Mathematics Quiz with a perfect score!
+        <p id="successBlurb" style="font-size: 18px; color: #6c757d; margin-bottom: 30px;">
+            You've successfully completed the <span id="quizTitleComplete">Quiz</span> with a perfect score!
         </p>
+
+        <!-- Primary CTA and Certificate image near the top -->
+        <div id="claimCtaContainer" style="display: none;">
+            <a id="claimLink" class="primary-cta" href="#" target="_blank">Claim your certificate and create profile</a>
+        </div>
+
+        <div class="certificate-display">
+            <h3>📜 Certificate Image</h3>
+            <div id="certificateImageContainer">
+                <img id="certificateImage" alt="Certificate"
+                    style="max-width: 100%; height: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+            </div>
+        </div>
 
         <div class="certificate-info">
             <h3>📜 Your Certificate</h3>
@@ -182,14 +213,6 @@
             <button id="refreshBtn" onclick="checkFileStatus()">🔄 Refresh Status</button>
         </div>
 
-        <div class="certificate-display">
-            <h3>📜 Certificate Image</h3>
-            <div id="certificateImageContainer">
-                <img id="certificateImage" alt="Certificate"
-                    style="max-width: 100%; height: auto; border: 1px solid #dee2e6; border-radius: 8px;">
-            </div>
-        </div>
-
         <div style="margin-top: 30px;">
             <button onclick="window.location.href='/'">🏠 Take Quiz Again</button>
             <button onclick="downloadCertificate()">📥 Download Certificate</button>
@@ -198,11 +221,28 @@
 
     <script>
         let fileHash = '';
+        let quizTitle = 'Quiz';
+        let claimShortUrl = '';
 
         // Get file hash from URL parameters
         function getFileHash() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('hash');
+        }
+
+        // Load quiz title from API
+        async function loadQuizTitle() {
+            try {
+                const res = await fetch('/api/quiz');
+                const data = await res.json();
+                quizTitle = data.title || 'Quiz';
+                const titleSpan = document.getElementById('quizTitleComplete');
+                if (titleSpan) titleSpan.textContent = quizTitle;
+                document.title = `Certificate Complete - ${quizTitle}`;
+            } catch (e) {
+                // keep default title
+                console.warn('Failed to load quiz title:', e.message);
+            }
         }
 
         // Check file status from API
@@ -261,6 +301,15 @@
                             // Prefer claim link CID to avoid any mismatch and ensure retrievability
                             const ipfsViaClaim = `https://gateway.pinata.cloud/ipfs/${claim.cid}`;
                             certImage.src = ipfsViaClaim;
+
+                            // Populate the primary CTA with the claim short URL
+                            if (claim.shorturl) {
+                                claimShortUrl = claim.shorturl;
+                                const ctaContainer = document.getElementById('claimCtaContainer');
+                                const claimLink = document.getElementById('claimLink');
+                                claimLink.href = claimShortUrl;
+                                ctaContainer.style.display = 'block';
+                            }
                         } else if (gatewayUrl || fileData.hash) {
                             const pinFallback = `https://gateway.pinata.cloud/ipfs/${fileData.hash || ''}`;
                             certImage.src = pinFallback;
@@ -312,7 +361,7 @@
                             <div class="status-item">
                                 <span class="status-label">Claim IPFS URL:</span>
                                 <span class="status-value">
-                                    <a href="https://gateway.pinata.cloud/ipfs/${matchingPermalink.cid}" target="_blank" style="color: #007bff;">View on IPFS</a>
+                                    <a href="${matchingPermalink.shorturl}" target="_blank" style="color: #007bff;">Open Claim Link</a>
                                 </span>
                             </div>
                             ` : '';
@@ -391,6 +440,8 @@
 
             // Check file status
             checkFileStatus();
+            // Load quiz title
+            loadQuizTitle();
         });
     </script>
 </body>

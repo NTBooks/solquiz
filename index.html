@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mathematics Quiz - Certificate Demo</title>
+    <title>Loading Quiz...</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -129,7 +129,7 @@
 
 <body>
     <div class="container">
-        <h1>🎓 Mathematics Quiz</h1>
+        <h1 id="quizTitle">🎓 Loading...</h1>
         <p style="text-align: center; color: #6c757d; margin-bottom: 30px;">
             Answer all questions correctly to earn your certificate!
         </p>
@@ -150,13 +150,19 @@
 
     <script>
         let questions = [];
+        let quizTitle = 'Quiz';
 
         // Load questions when page loads
         async function loadQuestions() {
             try {
                 const response = await fetch('/api/quiz');
                 const data = await response.json();
+                quizTitle = data.title || 'Quiz';
                 questions = data.questions;
+                // Update page titles from quiz metadata
+                document.title = `${quizTitle} - Certificate Demo`;
+                const titleEl = document.getElementById('quizTitle');
+                if (titleEl) titleEl.textContent = `🎓 ${quizTitle}`;
                 renderQuestions();
             } catch (error) {
                 console.error('Failed to load questions:', error);
@@ -165,23 +171,39 @@
             }
         }
 
-        // Render questions in the form
+        // Utility: Fisher-Yates shuffle that returns a new array
+        function shuffleArray(items) {
+            const arr = items.slice();
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = tmp;
+            }
+            return arr;
+        }
+
+        // Render questions in the form (shuffle options but keep original indices in values)
         function renderQuestions() {
             const questionsDiv = document.getElementById('questions');
-            questionsDiv.innerHTML = questions.map((q, index) => `
+            questionsDiv.innerHTML = questions.map((q, index) => {
+                const optionsWithOriginal = q.options.map((option, optionIndex) => ({ option, originalIndex: optionIndex }));
+                const shuffled = shuffleArray(optionsWithOriginal);
+                return `
                 <div class="question">
                     <h3>Question ${index + 1}</h3>
                     <p>${q.question}</p>
                     <div class="options">
-                        ${q.options.map((option, optionIndex) => `
+                        ${shuffled.map((item) => `
                             <label class="option">
-                                <input type="radio" name="q${index}" value="${optionIndex}" required>
-                                ${option}
+                                <input type="radio" name="q${index}" value="${item.originalIndex}" required>
+                                ${item.option}
                             </label>
                         `).join('')}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Handle form submission
