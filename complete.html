@@ -156,6 +156,20 @@
             margin: 20px 0;
         }
 
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .image-wrapper .spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+
         .hash-display {
             background: #f8f9fa;
             padding: 10px;
@@ -198,7 +212,7 @@
 
         <div class="certificate-display">
             <h3>📜 Certificate Image</h3>
-            <div id="certificateImageContainer">
+            <div id="certificateImageContainer" class="image-wrapper">
                 <div id="certLoading" class="loading" style="display: none;">
                     <div class="spinner"></div>
                     <div>Preparing your certificate image...</div>
@@ -343,8 +357,8 @@
                         imageUrl = pinFallback;
                     }
 
-                    // Start polling image until it loads
-                    startImagePolling();
+                    // Load the image directly; swap spinner off when loaded
+                    loadCertificateImage();
 
                     // Build status display with both group info and blockchain info
                     let statusHTML = `
@@ -440,7 +454,7 @@
             }
         }
 
-        function startImagePolling() {
+        function loadCertificateImage() {
             const img = document.getElementById('certificateImage');
             const loading = document.getElementById('certLoading');
             if (!imageUrl) return;
@@ -451,50 +465,17 @@
             imageLoaded = false;
             imageAttemptInFlight = false;
 
-            // Backoff settings
-            let attempt = 0;
-            const maxDelay = 10000; // cap at 10s
-
-            const scheduleNext = () => {
-                if (imageLoaded) return;
-                const base = Math.min(1000 * Math.pow(2, attempt++), maxDelay);
-                const jitter = Math.floor(Math.random() * 300);
-                imagePollTimer = setTimeout(tryLoad, base + jitter);
+            const src = `${imageUrl}`;
+            img.onload = () => {
+                loading.style.display = 'none';
+                img.style.display = 'block';
+                imageLoaded = true;
             };
-
-            const tryLoad = () => {
-                if (imageLoaded || imageAttemptInFlight) {
-                    scheduleNext();
-                    return;
-                }
-                imageAttemptInFlight = true;
-
-                // Probe via server proxy to avoid gateway caching/CORS; bust cache with ts
-                const probeUrl = `/ipfs?url=${encodeURIComponent(imageUrl)}&t=${Date.now()}`;
-                const probeImg = new Image();
-                probeImg.onload = () => {
-                    imageLoaded = true;
-                    imageAttemptInFlight = false;
-                    // Set the real image src to the successful proxied URL
-                    img.src = probeUrl;
-                    img.onload = () => {
-                        loading.style.display = 'none';
-                        img.style.display = 'block';
-                        if (imagePollTimer) {
-                            clearTimeout(imagePollTimer);
-                            imagePollTimer = null;
-                        }
-                    };
-                };
-                probeImg.onerror = () => {
-                    imageAttemptInFlight = false;
-                    scheduleNext();
-                };
-                probeImg.src = probeUrl;
+            img.onerror = () => {
+                // keep spinner visible; allow manual refresh
+                imageLoaded = false;
             };
-
-            // Kick off
-            tryLoad();
+            img.src = src;
         }
 
         // Download certificate function
