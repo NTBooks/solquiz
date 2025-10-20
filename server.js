@@ -14,6 +14,33 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+// Basic request logger with request ID and timing
+app.use((req, res, next) => {
+    const startMs = Date.now();
+    const reqId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    req._reqId = reqId;
+    try {
+        const method = req.method;
+        const url = req.originalUrl || req.url;
+        console.log(`[${reqId}] → ${method} ${url}`);
+        if (method !== 'GET') {
+            try {
+                const bodyPreview = JSON.stringify(req.body);
+                console.log(`[${reqId}] body: ${bodyPreview?.length > 1000 ? bodyPreview.slice(0, 1000) + '…' : bodyPreview}`);
+            } catch (e) {
+                console.log(`[${reqId}] body: <unserializable>`);
+            }
+        }
+    } catch (_) {
+        // ignore logger errors
+    }
+    res.on('finish', () => {
+        const ms = Date.now() - startMs;
+        console.log(`[${reqId}] ← ${res.statusCode} (${ms}ms)`);
+    });
+    next();
+});
+
 // API configuration
 const API_BASE_URL = process.env.API_BASE_URL;
 const API_KEY = process.env.API_KEY;
@@ -60,9 +87,11 @@ async function loadCertificateTemplate(preferredTemplateName) {
         if (!templatePath) continue;
         try {
             const svg = await fs.readFile(templatePath, 'utf8');
+            console.log(`[template] Loaded certificate template from: ${templatePath}`);
             return svg;
         } catch (e) {
             // try next
+            console.log(`[template] Missing template candidate: ${templatePath}`);
         }
     }
     return null;
@@ -101,7 +130,7 @@ function applyTemplatePlaceholders(svgContent, replacements) {
 }
 
 // Generate certificate with name and date and return buffer + certificateId
-async function generateCertificate(name, title, templateName) {
+async function generateCertificate(name, title, templateName, reqId) {
     const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -111,6 +140,7 @@ async function generateCertificate(name, title, templateName) {
     const certificateId = Date.now().toString();
 
     // Try to load external SVG template
+    console.log(`[${reqId || 'cert'}] Generating certificate (name="${name}", title="${title}", template="${templateName}")`);
     const loadedTemplate = await loadCertificateTemplate(templateName);
 
     let svgToRender;
@@ -125,6 +155,7 @@ async function generateCertificate(name, title, templateName) {
             DATE: currentDate,
             CERT_ID: certificateId
         };
+        console.log(`[${reqId || 'cert'}] Applying placeholders: ${Object.keys(replacements).join(', ')}`);
         svgToRender = applyTemplatePlaceholders(loadedTemplate, replacements)
             // allow template fonts to be adjusted by env by replacing default family occurrences
             .replace(/DejaVu Sans, Arial, sans-serif/g, CERT_FONT_FAMILY);
@@ -147,9 +178,11 @@ async function generateCertificate(name, title, templateName) {
     }
 
     // Convert SVG to PNG using Sharp
+    console.log(`[${reqId || 'cert'}] Rendering SVG to PNG via sharp…`);
     const buffer = await sharp(Buffer.from(svgToRender))
         .png()
         .toBuffer();
+    console.log(`[${reqId || 'cert'}] Rendered PNG size: ${buffer.length} bytes`);
 
     return { buffer, certificateId };
 }
@@ -172,6 +205,8 @@ app.get('/api/quiz', (req, res) => {
 app.post('/api/submit-quiz', async (req, res) => {
     try {
         const { name, answers } = req.body;
+        const reqId = req._reqId || 'submit';
+        console.log(`[${reqId}] Submit received. Name: ${name}, answers length: ${Array.isArray(answers) ? answers.length : 'n/a'}, expected: ${quizQuestions.length}`);
 
         if (!name || !answers || answers.length !== quizQuestions.length) {
             return res.status(400).json({
@@ -189,8 +224,10 @@ app.post('/api/submit-quiz', async (req, res) => {
         }
 
         const isPerfect = correctAnswers === quizQuestions.length;
+        console.log(`[${reqId}] Graded quiz. Correct: ${correctAnswers}/${quizQuestions.length}. Perfect: ${isPerfect}`);
 
         if (!isPerfect) {
+            console.log(`[${reqId}] Not perfect. Returning early.`);
             return res.json({
                 success: true,
                 perfect: false,
@@ -201,10 +238,12 @@ app.post('/api/submit-quiz', async (req, res) => {
         }
 
         // Generate certificate
-        const { buffer: certBuffer, certificateId } = await generateCertificate(name, quizTitle, quizTemplate || CERT_TEMPLATE);
+        console.log(`[${reqId}] Generating certificate…`);
+        const { buffer: certBuffer, certificateId } = await generateCertificate(name, quizTitle, quizTemplate || CERT_TEMPLATE, reqId);
         const certFilename = `${certificateId}.png`;
         const certPath = path.join(__dirname, certFilename);
         await fs.writeFile(certPath, certBuffer);
+        console.log(`[${reqId}] Wrote certificate file: ${certPath} (${certBuffer.length} bytes)`);
 
         // Upload certificate file (creates collection if it doesn't exist)
         const collectionName = 'Cert Demo';
@@ -215,15 +254,14 @@ app.post('/api/submit-quiz', async (req, res) => {
             contentType: 'image/png'
         });
 
-        console.log('Uploading certificate...');
-        console.log('Certificate buffer size:', certBuffer.length);
-        console.log('Collection name:', collectionName);
-        console.log('Certificate filename:', certFilename);
+        console.log(`[${reqId}] Uploading certificate… filename=${certFilename}, collection="${collectionName}"`);
 
         let fileHash = 'unknown';
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/webhook/${API_KEY}`, formData, {
+            const uploadUrl = `${API_BASE_URL}/webhook/${API_KEY}`;
+            console.log(`[${reqId}] POST ${uploadUrl}`);
+            const response = await axios.post(uploadUrl, formData, {
                 headers: {
                     'secret-key': API_SECRET,
                     'group-id': collectionName,
@@ -231,25 +269,32 @@ app.post('/api/submit-quiz', async (req, res) => {
                     ...formData.getHeaders() // Include FormData headers
                 }
             });
-
-            console.log('Upload response status:', response.status);
-            console.log('Upload successful:', response.data);
+            console.log(`[${reqId}] Upload response status: ${response.status}`);
+            try {
+                console.log(`[${reqId}] Upload response data keys: ${Object.keys(response.data || {}).join(', ')}`);
+            } catch (_) { }
             fileHash = response.data?.hash || 'unknown';
 
             // Attempt to delete local file after successful upload
             try {
                 await fs.unlink(certPath);
-                console.log('Local certificate deleted:', certFilename);
+                console.log(`[${reqId}] Local certificate deleted: ${certFilename}`);
             } catch (e) {
-                console.warn('Could not delete local certificate file:', e.message);
+                console.warn(`[${reqId}] Could not delete local certificate file: ${e.message}`);
             }
         } catch (uploadError) {
-            console.error('Upload failed:', uploadError.message);
+            console.error(`[${reqId}] Upload failed: ${uploadError.message}`);
+            if (uploadError.response) {
+                console.error(`[${reqId}] Upload error status: ${uploadError.response.status}`);
+                try {
+                    console.error(`[${reqId}] Upload error data: ${JSON.stringify(uploadError.response.data)}`);
+                } catch (_) { }
+            }
             try {
                 await fs.unlink(certPath);
-                console.log('Local certificate deleted after failed upload:', certFilename);
+                console.log(`[${reqId}] Local certificate deleted after failed upload: ${certFilename}`);
             } catch (e) {
-                console.warn('Could not delete local certificate file after failed upload:', e.message);
+                console.warn(`[${reqId}] Could not delete local certificate file after failed upload: ${e.message}`);
             }
             return res.status(500).json({
                 success: false,
@@ -260,7 +305,9 @@ app.post('/api/submit-quiz', async (req, res) => {
 
         // Stamp the collection after uploading the certificate
         try {
-            const stampResponse = await axios.patch(`${API_BASE_URL}/webhook/${API_KEY}`, {}, {
+            const stampUrl = `${API_BASE_URL}/webhook/${API_KEY}`;
+            console.log(`[${reqId}] Patching collection (stamp)… ${stampUrl}`);
+            const stampResponse = await axios.patch(stampUrl, {}, {
                 headers: {
                     'Content-Type': 'application/json',
                     'secret-key': API_SECRET,
@@ -270,14 +317,15 @@ app.post('/api/submit-quiz', async (req, res) => {
             });
 
             if (stampResponse.status === 200) {
-                console.log('Collection stamped successfully');
+                console.log(`[${reqId}] Collection stamped successfully`);
             } else {
-                console.error('Failed to stamp collection:', stampResponse.status);
+                console.error(`[${reqId}] Failed to stamp collection: ${stampResponse.status}`);
             }
         } catch (error) {
-            console.error('Failed to stamp collection:', error.message);
+            console.error(`[${reqId}] Failed to stamp collection: ${error.message}`);
         }
 
+        console.log(`[${reqId}] Sending success response. fileHash=${fileHash}`);
         res.json({
             success: true,
             perfect: true,
@@ -288,7 +336,9 @@ app.post('/api/submit-quiz', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Quiz submission error:', error.message);
+        const reqId = req._reqId || 'submit';
+        console.error(`[${reqId}] Quiz submission error: ${error.message}`);
+        if (error.stack) console.error(error.stack);
         res.status(500).json({
             success: false,
             message: 'Failed to process quiz submission',
