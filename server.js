@@ -98,22 +98,9 @@ async function loadCertificateTemplate(preferredTemplateName) {
 }
 
 function applyTemplatePlaceholders(svgContent, replacements) {
-    // Reassemble placeholders that were split by inline tags like <tspan>
-    const keys = Object.keys(replacements);
-
+    // Remove inline tspan wrappers that can split placeholders
+    let cleaned = svgContent.replace(/<\/?tspan[^>]*>/gi, '');
     const escapeForRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const xmlGap = String.raw`(?:\s*</?[^>]+>\s*)*`;
-    const normalizeBrokenPlaceholders = (input) => {
-        let out = input;
-        for (const key of keys) {
-            const chars = key.split('').map((c) => escapeForRegex(c));
-            const keyPattern = chars.join(xmlGap);
-            const brokenRegex = new RegExp(`##${xmlGap}${keyPattern}${xmlGap}##`, 'g');
-            out = out.replace(brokenRegex, `##${key}##`);
-        }
-        return out;
-    };
-
     const escapeXml = (value) => String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -121,7 +108,7 @@ function applyTemplatePlaceholders(svgContent, replacements) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
 
-    let result = normalizeBrokenPlaceholders(svgContent);
+    let result = cleaned;
     for (const [key, value] of Object.entries(replacements)) {
         const pattern = new RegExp(`##${escapeForRegex(key)}##`, 'g');
         result = result.replace(pattern, escapeXml(value));
