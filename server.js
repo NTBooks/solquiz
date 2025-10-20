@@ -487,60 +487,7 @@ app.get('/api/file-status/:hash', async (req, res) => {
     }
 });
 
-// GET /ipfs - Proxy IPFS content to handle CORS and ORB issues
-app.get('/ipfs', async (req, res) => {
-    try {
-        const { url } = req.query;
-
-        if (!url) {
-            return res.status(400).json({
-                success: false,
-                message: 'URL query parameter is required'
-            });
-        }
-
-        console.log(`Proxying IPFS content from: ${url}`);
-
-        const response = await axios.get(url, {
-            responseType: 'stream',
-            timeout: 10000,
-            maxRedirects: 5,
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; FileBrowser/1.0)',
-                'Accept': 'image/*,text/*,application/*,*/*',
-                'Cookie': 'maint_bypass=p00pp00p'
-            }
-        });
-
-        // Forward the response headers
-        const contentType = response.headers['content-type'];
-        const contentLength = response.headers['content-length'];
-        const cacheControl = response.headers['cache-control'];
-        const etag = response.headers['etag'];
-
-        if (contentType) res.setHeader('Content-Type', contentType);
-        if (contentLength) res.setHeader('Content-Length', contentLength);
-        if (cacheControl) res.setHeader('Cache-Control', cacheControl);
-        if (etag) res.setHeader('ETag', etag);
-
-        // Set CORS headers
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
-
-        // Stream the response
-        response.data.pipe(res);
-
-    } catch (error) {
-        console.error('IPFS proxy error:', error.message);
-
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch IPFS content',
-            error: error.message
-        });
-    }
-});
+// Removed /ipfs proxy route; clients should use Pinata gateway URLs directly
 
 app.listen(PORT, () => {
     console.log(`Quiz Certificate Demo running on port http://localhost:${PORT}`);
