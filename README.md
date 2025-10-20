@@ -55,6 +55,14 @@ API_NETWORK=public
 
 # Server configuration
 PORT=3002
+
+# Certificate rendering
+# Which SVG template file from templates/ to use
+# e.g., CERT_TEMPLATE=default.svg or CERT_TEMPLATE=my-custom.svg
+CERT_TEMPLATE=default.svg
+
+# Font family to use inside SVGs (overrides template font family)
+CERT_FONT_FAMILY=DejaVu Sans, Arial, sans-serif
 ```
 
 ## API Integration
@@ -71,6 +79,8 @@ simple_example_2_quiz_to_cert/
 ├── server.js          # Express server with quiz logic and API integration
 ├── index.html         # Quiz interface
 ├── complete.html      # Certificate completion page
+├── templates/         # SVG templates with ##PLACEHOLDER## tokens
+│   └── default.svg    # Default certificate layout
 ├── package.json       # Dependencies
 ├── env.example        # Environment variables template
 └── README.md         # This file
@@ -128,9 +138,24 @@ The demo includes three simple addition questions:
 To modify the demo:
 
 1. **Change Questions**: Edit the `quizQuestions` array in `server.js`
-2. **Update Certificate**: Modify the SVG template in `generateCertificate()`
+2. **Update Certificate**: Edit or add an SVG in `templates/` and set `CERT_TEMPLATE`
 3. **Change Collection Name**: Update `collectionName` variable
 4. **Add Features**: Extend the API integration or UI components
+
+### Template Placeholders
+
+Templates are plain SVG files that can be edited in any vector editor or text editor. Use `##PLACEHOLDER##` tokens which will be replaced at runtime:
+
+- `##CERT_TITLE##`
+- `##COURSE_TITLE##`
+- `##INTRO_TEXT##`
+- `##NAME##`
+- `##COMPLETION_TEXT##`
+- `##SECONDARY_TEXT##`
+- `##DATE##`
+- `##CERT_ID##`
+
+Set `CERT_TEMPLATE` in `.env` to the filename inside `templates/`.
 
 ## Troubleshooting
 

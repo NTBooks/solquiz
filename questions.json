@@ -1,5 +1,6 @@
 {
     "title": "Blockchain Credentials Quiz",
+    "template": "chainletter_quiz_cert.svg",
     "questions": [
         {
             "question": "What is the main advantage of storing a digital credential on the blockchain instead of a traditional database?",

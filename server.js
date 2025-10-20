@@ -20,11 +20,14 @@ const API_KEY = process.env.API_KEY;
 const API_SECRET = process.env.API_SECRET;
 const API_NETWORK = process.env.API_NETWORK || 'public';
 const CERT_FONT_FAMILY = process.env.CERT_FONT_FAMILY || 'DejaVu Sans, Arial, sans-serif';
+const CERT_TEMPLATE = process.env.CERT_TEMPLATE || 'default.svg';
+const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
 // Quiz questions (load from .env QUIZ or fallback)
 const QUIZ_FILE = process.env.QUIZ || 'questions.json';
 let quizQuestions = [];
 let quizTitle = 'Quiz';
+let quizTemplate = null; // optional per-quiz template override
 try {
     const quizPath = path.join(__dirname, QUIZ_FILE);
     const loaded = require(quizPath);
@@ -34,8 +37,11 @@ try {
     } else if (loaded && typeof loaded === 'object') {
         quizTitle = loaded.title || 'Quiz';
         quizQuestions = Array.isArray(loaded.questions) ? loaded.questions : [];
+        if (typeof loaded.template === 'string' && loaded.template.trim().length > 0) {
+            quizTemplate = loaded.template.trim();
+        }
     }
-    console.log(`Loaded quiz from ${QUIZ_FILE} (title: ${quizTitle}, questions: ${quizQuestions.length})`);
+    console.log(`Loaded quiz from ${QUIZ_FILE} (title: ${quizTitle}, questions: ${quizQuestions.length}, template: ${quizTemplate || CERT_TEMPLATE})`);
 } catch (e) {
     console.error(`Failed to load quiz file '${QUIZ_FILE}':`, e.message);
     quizQuestions = [];
@@ -43,8 +49,38 @@ try {
 
 
 
+async function loadCertificateTemplate(preferredTemplateName) {
+    // Load template from templates directory; fallback to default inline template if missing
+    const candidatePaths = [
+        preferredTemplateName ? path.join(TEMPLATES_DIR, preferredTemplateName) : null,
+        path.join(TEMPLATES_DIR, CERT_TEMPLATE),
+        path.join(TEMPLATES_DIR, 'default.svg')
+    ];
+    for (const templatePath of candidatePaths) {
+        if (!templatePath) continue;
+        try {
+            const svg = await fs.readFile(templatePath, 'utf8');
+            return svg;
+        } catch (e) {
+            // try next
+        }
+    }
+    return null;
+}
+
+function applyTemplatePlaceholders(svgContent, replacements) {
+    let result = svgContent;
+    Object.entries(replacements).forEach(([key, value]) => {
+        // Escape replacement for use in string replace
+        const safeValue = String(value);
+        const pattern = new RegExp(`##${key}##`, 'g');
+        result = result.replace(pattern, safeValue);
+    });
+    return result;
+}
+
 // Generate certificate with name and date and return buffer + certificateId
-async function generateCertificate(name, title) {
+async function generateCertificate(name, title, templateName) {
     const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -53,55 +89,44 @@ async function generateCertificate(name, title) {
 
     const certificateId = Date.now().toString();
 
-    // Create a simple certificate template
-    const svgTemplate = `
-		<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-			<rect width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
-			<rect x="50" y="50" width="700" height="500" fill="white" stroke="#007bff" stroke-width="3"/>
-			
-			<!-- Header -->
-			<text x="400" y="120" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="36" font-weight="bold" fill="#007bff">
-				Certificate of Completion
-			</text>
-			
-			<!-- Subtitle -->
-			<text x="400" y="160" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="18" fill="#6c757d">
-				${title}
-			</text>
-			
-			<!-- Main text -->
-			<text x="400" y="250" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">
-				This is to certify that
-			</text>
-			
-			<!-- Name -->
-			<text x="400" y="300" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="28" font-weight="bold" fill="#007bff">
-				${name}
-			</text>
-			
-			<!-- Completion text -->
-			<text x="400" y="350" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">
-				has successfully completed the ${title}
-			</text>
-			
-			<text x="400" y="380" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">
-				with a perfect score.
-			</text>
-			
-			<!-- Date -->
-			<text x="400" y="450" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="16" fill="#6c757d">
-				Date: ${currentDate}
-			</text>
-			
-			<!-- Footer -->
-			<text x="400" y="520" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="14" fill="#6c757d">
-				Certificate ID: ${certificateId}
-			</text>
-		</svg>
-	`;
+    // Try to load external SVG template
+    const loadedTemplate = await loadCertificateTemplate(templateName);
+
+    let svgToRender;
+    if (loadedTemplate) {
+        const replacements = {
+            CERT_TITLE: 'Certificate of Completion',
+            COURSE_TITLE: title,
+            INTRO_TEXT: 'This is to certify that',
+            NAME: name,
+            COMPLETION_TEXT: `has successfully completed the ${title}`,
+            SECONDARY_TEXT: 'with a perfect score.',
+            DATE: currentDate,
+            CERT_ID: certificateId
+        };
+        svgToRender = applyTemplatePlaceholders(loadedTemplate, replacements)
+            // allow template fonts to be adjusted by env by replacing default family occurrences
+            .replace(/DejaVu Sans, Arial, sans-serif/g, CERT_FONT_FAMILY);
+    } else {
+        // Fallback inline template
+        svgToRender = `
+			<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+				<rect width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+				<rect x="50" y="50" width="700" height="500" fill="white" stroke="#007bff" stroke-width="3"/>
+				<text x="400" y="120" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="36" font-weight="bold" fill="#007bff">Certificate of Completion</text>
+				<text x="400" y="160" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="18" fill="#6c757d">${title}</text>
+				<text x="400" y="250" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">This is to certify that</text>
+				<text x="400" y="300" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="28" font-weight="bold" fill="#007bff">${name}</text>
+				<text x="400" y="350" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">has successfully completed the ${title}</text>
+				<text x="400" y="380" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="20" fill="#212529">with a perfect score.</text>
+				<text x="400" y="450" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="16" fill="#6c757d">Date: ${currentDate}</text>
+				<text x="400" y="520" text-anchor="middle" font-family="${CERT_FONT_FAMILY}" font-size="14" fill="#6c757d">Certificate ID: ${certificateId}</text>
+			</svg>
+		`;
+    }
 
     // Convert SVG to PNG using Sharp
-    const buffer = await sharp(Buffer.from(svgTemplate))
+    const buffer = await sharp(Buffer.from(svgToRender))
         .png()
         .toBuffer();
 
@@ -155,7 +180,7 @@ app.post('/api/submit-quiz', async (req, res) => {
         }
 
         // Generate certificate
-        const { buffer: certBuffer, certificateId } = await generateCertificate(name, quizTitle);
+        const { buffer: certBuffer, certificateId } = await generateCertificate(name, quizTitle, quizTemplate || CERT_TEMPLATE);
         const certFilename = `${certificateId}.png`;
         const certPath = path.join(__dirname, certFilename);
         await fs.writeFile(certPath, certBuffer);

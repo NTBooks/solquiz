@@ -1,0 +1,37 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 36px 'DejaVu Sans', Arial, sans-serif; fill: #007bff; }
+      .subtitle { font: 18px 'DejaVu Sans', Arial, sans-serif; fill: #6c757d; }
+      .body { font: 20px 'DejaVu Sans', Arial, sans-serif; fill: #212529; }
+      .name { font: bold 28px 'DejaVu Sans', Arial, sans-serif; fill: #007bff; }
+      .muted { font: 16px 'DejaVu Sans', Arial, sans-serif; fill: #6c757d; }
+    </style>
+  </defs>
+
+  <rect width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  <rect x="50" y="50" width="700" height="500" fill="white" stroke="#007bff" stroke-width="3"/>
+
+  <!-- Header -->
+  <text x="400" y="120" text-anchor="middle" class="title">##CERT_TITLE##</text>
+
+  <!-- Subtitle -->
+  <text x="400" y="160" text-anchor="middle" class="subtitle">##COURSE_TITLE##</text>
+
+  <!-- Main text -->
+  <text x="400" y="250" text-anchor="middle" class="body">##INTRO_TEXT##</text>
+
+  <!-- Name -->
+  <text x="400" y="300" text-anchor="middle" class="name">##NAME##</text>
+
+  <!-- Completion text -->
+  <text x="400" y="350" text-anchor="middle" class="body">##COMPLETION_TEXT##</text>
+  <text x="400" y="380" text-anchor="middle" class="body">##SECONDARY_TEXT##</text>
+
+  <!-- Date -->
+  <text x="400" y="450" text-anchor="middle" class="muted">Date: ##DATE##</text>
+
+  <!-- Footer -->
+  <text x="400" y="520" text-anchor="middle" class="muted">Certificate ID: ##CERT_ID##</text>
+</svg>
+
