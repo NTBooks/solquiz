@@ -36,25 +36,25 @@
     </g>
     <rect x="50" y="50" width="700" height="500" style="fill:white;stroke:rgb(134,198,234);stroke-width:3px;"/>
     <g transform="matrix(1,0,0,1,400,166.849)">
-        <text x="-65.66px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(0,123,255);stroke:rgb(134,198,234);stroke-width:1px;stroke-linejoin:round;stroke-miterlimit:2;">##CER<tspan x="-14.371px -4.598px " y="0px 0px ">T_</tspan>TITLE##</text>
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(0,123,255);stroke:rgb(134,198,234);stroke-width:1px;stroke-linejoin:round;stroke-miterlimit:2;">##CERT_TITLE##</text>
     </g>
     <g transform="matrix(1,0,0,1,400,199.849)">
-        <text x="-78.254px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(108,117,125);">##COURSE_TITLE##</text>
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(108,117,125);">##COURSE_TITLE##</text>
     </g>
     <g transform="matrix(1,0,0,1,400,269.019)">
-        <text x="-67.578px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(33,37,41);">##INTRO_TEXT##</text>
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(33,37,41);">##INTRO_TEXT##</text>
     </g>
     <g transform="matrix(1,0,0,1,400,309.962)">
-        <text x="-40.91px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(0,123,255);stroke:rgb(134,198,234);stroke-width:1px;stroke-linejoin:round;stroke-miterlimit:2;">##NAME##</text>
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(0,123,255);stroke:rgb(134,198,234);stroke-width:1px;stroke-linejoin:round;stroke-miterlimit:2;">##NAME##</text>
     </g>
     <g transform="matrix(1,0,0,1,400,350)">
-        <text x="-95.586px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(33,37,41);">##COMPLETION_TEXT##</text>
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(33,37,41);">##COMPLETION_TEXT##</text>
     </g>
     <g transform="matrix(1,0,0,1,400,380)">
-        <text x="-93.223px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(33,37,41);">##SECONDAR<tspan x="14.965px 25.637px " y="0px 0px ">Y_</tspan>TEXT##</text>
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(33,37,41);">##SECONDARY_TEXT##</text>
     </g>
     <g transform="matrix(1,0,0,1,400,450)">
-        <text x="-59.883px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(108,117,125);">Date: ##DA<tspan x="21.641px 31.414px " y="0px 0px ">TE</tspan>##</text>
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(108,117,125);">Date: ##DATE##</text>
     </g>
     <g transform="matrix(1,0,0,1,-2.05486,0)">
         <g transform="matrix(1,0,0,1,221.585,520)">
@@ -62,7 +62,7 @@
             </g>
             <g transform="matrix(16,0,0,16,-64.332,0)">
             </g>
-            <text x="-102.559px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(108,117,125);">Certiﬁcate ID: ##CER<tspan x="50.09px 59.863px " y="0px 0px ">T_</tspan>ID##</text>
+            <text x="-102.559px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(108,117,125);">Certiﬁcate ID: ##CERT_ID##</text>
         </g>
         <g transform="matrix(1,0,0,1,583.849,520)">
             <g transform="matrix(16,0,0,16,101.828,0)">
