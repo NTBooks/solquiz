@@ -327,25 +327,13 @@
                 if (groupResult.success && groupResult.data) {
                     const fileData = groupResult.data;
 
-                    // Set certificate image src
-                    const certImage = document.getElementById('certificateImage');
-
-                    // Use claim link CID if available; otherwise use gateway/hash
-                    let gatewayUrl = fileData.gatewayurl;
-
-                    if (!gatewayUrl && fileData.hash) {
-                        gatewayUrl = `https://ipfs.io/ipfs/${fileData.hash}`;
-                    }
-
-                    // Try to use claim permalink (export_data.permalinks) to build /ipfs/:cid URL
-                    if (blockchainResult.success && blockchainResult.data && blockchainResult.data.export_data && blockchainResult.data.export_data.permalinks) {
+                    // Choose image URL: prefer the same gateway URL used by "View on IPFS"
+                    if (fileData.gatewayurl) {
+                        imageUrl = fileData.gatewayurl;
+                    } else if (blockchainResult.success && blockchainResult.data && blockchainResult.data.export_data && blockchainResult.data.export_data.permalinks) {
                         const claim = blockchainResult.data.export_data.permalinks.find(permalink => permalink.cid === (fileData.hash || hash));
                         if (claim && claim.cid) {
-                            // Prefer claim link CID to avoid any mismatch and ensure retrievability
-                            const ipfsViaClaim = `https://gateway.pinata.cloud/ipfs/${claim.cid}`;
-                            imageUrl = ipfsViaClaim;
-
-                            // Populate the primary CTA with the claim short URL
+                            imageUrl = `https://gateway.pinata.cloud/ipfs/${claim.cid}`;
                             if (claim.shorturl) {
                                 claimShortUrl = claim.shorturl;
                                 const ctaContainer = document.getElementById('claimCtaContainer');
@@ -353,17 +341,21 @@
                                 claimLink.href = claimShortUrl;
                                 ctaContainer.style.display = 'block';
                             }
-                        } else if (gatewayUrl || fileData.hash) {
-                            const pinFallback = `https://gateway.pinata.cloud/ipfs/${fileData.hash || ''}`;
-                            imageUrl = pinFallback;
+                        } else if (fileData.hash) {
+                            imageUrl = `https://gateway.pinata.cloud/ipfs/${fileData.hash}`;
                         }
-                    } else if (gatewayUrl || fileData.hash) {
-                        const pinFallback = `https://gateway.pinata.cloud/ipfs/${fileData.hash || ''}`;
-                        imageUrl = pinFallback;
+                    } else if (fileData.hash) {
+                        imageUrl = `https://gateway.pinata.cloud/ipfs/${fileData.hash}`;
                     }
 
                     // Load the image directly; swap spinner off when loaded
                     loadCertificateImage();
+
+                    // Also set the certificate preview image to the same URL
+                    const certPreview = document.getElementById('certImage');
+                    if (certPreview && imageUrl) {
+                        certPreview.src = imageUrl;
+                    }
 
                     // Build status display with both group info and blockchain info
                     let statusHTML = `
