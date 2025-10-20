@@ -129,6 +129,29 @@ function applyTemplatePlaceholders(svgContent, replacements) {
     return result;
 }
 
+function prepareSvgForSharp(svg) {
+    // Strip XML declaration and DOCTYPE which can confuse some renderers
+    let out = svg.replace(/<\?xml[\s\S]*?\?>/i, '').replace(/<!DOCTYPE[\s\S]*?>/i, '');
+    // Ensure numeric width/height instead of percentages if present
+    out = out.replace(/width="100%"/i, 'width="800"').replace(/height="100%"/i, 'height="600"');
+    return out;
+}
+
+async function withTimeout(promise, ms, label) {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`Timeout after ${ms}ms${label ? ` (${label})` : ''}`)), ms);
+    });
+    try {
+        const result = await Promise.race([promise, timeoutPromise]);
+        clearTimeout(timeoutId);
+        return result;
+    } catch (e) {
+        clearTimeout(timeoutId);
+        throw e;
+    }
+}
+
 // Generate certificate with name and date and return buffer + certificateId
 async function generateCertificate(name, title, templateName, reqId) {
     const currentDate = new Date().toLocaleDateString('en-US', {
@@ -159,6 +182,13 @@ async function generateCertificate(name, title, templateName, reqId) {
         svgToRender = applyTemplatePlaceholders(loadedTemplate, replacements)
             // allow template fonts to be adjusted by env by replacing default family occurrences
             .replace(/DejaVu Sans, Arial, sans-serif/g, CERT_FONT_FAMILY);
+        const unresolved = svgToRender.match(/##[A-Z0-9_]+##/g);
+        if (unresolved) {
+            console.warn(`[${reqId || 'cert'}] Warning: Unresolved placeholders remain: ${[...new Set(unresolved)].join(', ')}`);
+        }
+        svgToRender = prepareSvgForSharp(svgToRender);
+        console.log(`[${reqId || 'cert'}] SVG length after prep: ${svgToRender.length}`);
+        console.log(`[${reqId || 'cert'}] SVG preview: ${svgToRender.slice(0, 200).replace(/\n/g, ' ')}…`);
     } else {
         // Fallback inline template
         svgToRender = `
@@ -179,9 +209,19 @@ async function generateCertificate(name, title, templateName, reqId) {
 
     // Convert SVG to PNG using Sharp
     console.log(`[${reqId || 'cert'}] Rendering SVG to PNG via sharp…`);
-    const buffer = await sharp(Buffer.from(svgToRender))
-        .png()
-        .toBuffer();
+    let buffer;
+    try {
+        buffer = await withTimeout(
+            sharp(Buffer.from(svgToRender))
+                .png()
+                .toBuffer(),
+            15000,
+            'sharp.toBuffer'
+        );
+    } catch (e) {
+        console.error(`[${reqId || 'cert'}] Sharp render failed: ${e.message}`);
+        throw e;
+    }
     console.log(`[${reqId || 'cert'}] Rendered PNG size: ${buffer.length} bytes`);
 
     return { buffer, certificateId };
