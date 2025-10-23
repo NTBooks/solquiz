@@ -139,6 +139,15 @@ async function withTimeout(promise, ms, label) {
     }
 }
 
+function sanitizeUserName(input) {
+    if (input === undefined || input === null) return '';
+    const normalized = String(input).normalize('NFKC');
+    // Allow letters, numbers, space and a small set of punctuation typical in names
+    const stripped = normalized.replace(/[^\p{L}\p{N} .,'-]/gu, '');
+    const collapsed = stripped.replace(/\s+/g, ' ').trim();
+    return collapsed.slice(0, 80);
+}
+
 // Generate certificate with name and date and return buffer + certificateId
 async function generateCertificate(name, title, templateName, reqId) {
     const currentDate = new Date().toLocaleDateString('en-US', {
@@ -233,12 +242,13 @@ app.post('/api/submit-quiz', async (req, res) => {
     try {
         const { name, answers } = req.body;
         const reqId = req._reqId || 'submit';
-        console.log(`[${reqId}] Submit received. Name: ${name}, answers length: ${Array.isArray(answers) ? answers.length : 'n/a'}, expected: ${quizQuestions.length}`);
+        const safeName = sanitizeUserName(name);
+        console.log(`[${reqId}] Submit received. Name(len=${(name || '').length})->Safe(len=${safeName.length}), answers length: ${Array.isArray(answers) ? answers.length : 'n/a'}, expected: ${quizQuestions.length}`);
 
-        if (!name || !answers || answers.length !== quizQuestions.length) {
+        if (!safeName || !answers || answers.length !== quizQuestions.length) {
             return res.status(400).json({
                 success: false,
-                message: 'Name and all answers are required'
+                message: 'Valid name and all answers are required'
             });
         }
 
@@ -266,7 +276,7 @@ app.post('/api/submit-quiz', async (req, res) => {
 
         // Generate certificate
         console.log(`[${reqId}] Generating certificate…`);
-        const { buffer: certBuffer, certificateId } = await generateCertificate(name, quizTitle, quizTemplate || CERT_TEMPLATE, reqId);
+        const { buffer: certBuffer, certificateId } = await generateCertificate(safeName, quizTitle, quizTemplate || CERT_TEMPLATE, reqId);
         const certFilename = `${certificateId}.png`;
         const certPath = path.join(__dirname, certFilename);
         await fs.writeFile(certPath, certBuffer);

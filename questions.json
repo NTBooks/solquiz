@@ -6,7 +6,7 @@
             "question": "What is the main advantage of storing a digital credential on the blockchain instead of a traditional database?",
             "options": [
                 "It makes the credential look more impressive",
-                "It prevents anyone from altering or faking the credential",
+                "It ensures the credential will always be available and accessible",
                 "It allows the university to charge higher fees",
                 "It automatically renews the credential every year"
             ],
@@ -36,7 +36,7 @@
             "question": "Which of the following best describes the benefit for institutions using blockchain credentials?",
             "options": [
                 "They can issue unlimited fake diplomas",
-                "They can demonstrate transparency and trust in their academic or professional records",
+                "They can issue digital credentials that will always be verifiable",
                 "They can avoid ever updating their systems again",
                 "They no longer need to verify student identities"
             ],
