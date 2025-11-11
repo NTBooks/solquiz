@@ -77,6 +77,9 @@
             <text x="-101.828px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:16px;fill:rgb(108,117,125);">Issuer: Chainletter Labs, Inc.</text>
         </g>
     </g>
+    <g transform="matrix(1,0,0,1,400,576)">
+        <text x="0px" y="0px" text-anchor="middle" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:14px;fill:rgb(0,51,102);">##FOOTER##</text>
+    </g>
     <g transform="matrix(0.0820239,0,0,0.0820239,243.72,75.7521)">
         <g transform="matrix(13.0208,0,0,13.0208,444.076,-2.27374e-13)">
             <g>

@@ -48,6 +48,7 @@ const API_SECRET = process.env.API_SECRET;
 const API_NETWORK = process.env.API_NETWORK || 'public';
 const CERT_FONT_FAMILY = process.env.CERT_FONT_FAMILY || 'DejaVu Sans, Arial, sans-serif';
 const CERT_TEMPLATE = process.env.CERT_TEMPLATE || 'default.svg';
+const FOOTER = process.env.FOOTER || '';
 const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
 // Quiz questions (load from .env QUIZ or fallback)
@@ -172,7 +173,8 @@ async function generateCertificate(name, title, templateName, reqId) {
             COMPLETION_TEXT: `has successfully completed the ${title}`,
             SECONDARY_TEXT: 'with a perfect score.',
             DATE: currentDate,
-            CERT_ID: certificateId
+            CERT_ID: certificateId,
+            FOOTER: FOOTER
         };
         console.log(`[${reqId || 'cert'}] Applying placeholders: ${Object.keys(replacements).join(', ')}`);
         svgToRender = applyTemplatePlaceholders(loadedTemplate, replacements)
