@@ -475,10 +475,19 @@ app.get('/api/file-status/:hash', async (req, res) => {
         });
 
         if (response.status !== 200) {
+            console.error('File status check failed:', {
+                httpStatus: response.status,
+                responseHeaders: response.headers,
+                responseBody: response.data
+            });
             return res.status(response.status).json({
                 success: false,
                 message: 'Failed to get file status',
-                error: `HTTP ${response.status}`
+                error: `HTTP ${response.status}`,
+                debug: {
+                    responseHeaders: response.headers,
+                    responseBody: response.data
+                }
             });
         }
 
